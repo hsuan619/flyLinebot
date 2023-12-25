@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from flyline.t import *
+from flyline.t2 import *
 
 # Create your views here.
 from django.conf import settings
@@ -14,8 +15,11 @@ from linebot.models import (
     TextSendMessage,
     TemplateSendMessage,
     ButtonsTemplate,
+    QuickReply,
+    QuickReplyButton,
     MessageTemplateAction,
     PostbackEvent,
+    PostbackAction,
     PostbackTemplateAction,
 )
 
@@ -28,7 +32,7 @@ def callback(request):
     if request.method == "POST":
         signature = request.META["HTTP_X_LINE_SIGNATURE"]
         body = request.body.decode("utf-8")
-
+        global Userid
         try:
             events = parser.parse(body, signature)
         except InvalidSignatureError:
@@ -37,10 +41,31 @@ def callback(request):
             return HttpResponseBadRequest()
 
         for event in events:
-            if isinstance(event, MessageEvent):
+            if isinstance(event, PostbackEvent):  # 如果有回傳值事件
+                if event.postback.data == "老師":
+                    line_bot_api.reply_message(
+                        event.reply_token, TextSendMessage(text="請輸入課號:(多個請以空格區分 至多3個)")
+                    )
+
+            elif isinstance(event, MessageEvent):
                 rcMsg = event.message.text
-                msg = []
-                if rcMsg == "綁定":
+
+                if "-" in rcMsg:
+                    try:
+                        courseNum = event.message.text
+                        uid = event.source.user_id  # 取user id
+                        getCourse(courseNum, uid)
+                        if getCourse:
+                            line_bot_api.reply_message(
+                                event.reply_token, TextSendMessage(text="綁定成功")
+                            )
+                        Userid = uid
+
+                    except Exception:
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="綁定失敗，請再輸入一次")
+                        )
+                elif rcMsg == "綁定":
                     line_bot_api.reply_message(
                         event.reply_token,
                         TemplateSendMessage(
@@ -59,20 +84,42 @@ def callback(request):
                             ),
                         ),
                     )
-                elif "c" in event.message.text or "C" in event.message.text:
-                    courseNum = event.message.text
-                    uid = event.source.user_id  # 取user id
-                    getCourse(courseNum, uid)
-                    if getCourse:
-                        line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="綁定成功")
-                        )
-            elif isinstance(event, PostbackEvent):  # 如果有回傳值事件
-                if event.postback.data == "老師":
-                    line_bot_api.reply_message(
-                        event.reply_token, TextSendMessage(text="請輸入課號:(多個請以空格區分 至多3個)")
-                    )
 
         return HttpResponse()
     else:
         return HttpResponseBadRequest()
+
+
+def noticeTeacher(date):
+    match = re.search(r"(\d{1,2})/(\d{1,2})", date)
+    if match:
+        month = int(match.group(1))
+        day = int(match.group(2))
+        year = datetime.datetime.now().year  # 取得當前年份
+        extracted_date = datetime.date(year, month, day)
+        today = datetime.date.today().strftime("%m/%d")  # 獲取當前日期，格式為 MM/DD
+        rdate = extracted_date.strftime("%m/%d")  # 表單上的日期
+        target_date = extracted_date - datetime.timedelta(days=1)
+        schedule_date = target_date.strftime("%m/%d")  # 表單上的日期的前一天(目標日)
+        # print(schedule_date)
+        if today == schedule_date:
+            return target_date
+        # print(f"日期 {schedule_date} 是今天目標日，表單上 {rdate} 欄位，{target_date}")
+    else:
+        return None  # 如果未找到匹配的日期格式，返回 None 或者其他您認為適合的值
+
+
+def notice():
+    line_bot_api.push_message(
+        Userid,
+        TextSendMessage(text=f"您有一堂：{getTargetDate(getCourseNum(Userid))[0]}在明天。"),
+    )
+
+
+# while True:
+#     schedule.run_pending()
+#     time.sleep(60)
+classNum = getCourseNum(Userid)  # 課號
+noticeDate = getTargetDate(classNum)[1]  # 表單上的日期
+schedule_date = noticeTeacher(noticeDate, Userid)  # 通知日期
+schedule.every(1).minutes.do(notice()).at(schedule_date)
