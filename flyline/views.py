@@ -49,21 +49,21 @@ def callback(request):
 
             elif isinstance(event, MessageEvent):
                 rcMsg = event.message.text
-
                 if "-" in rcMsg:
                     try:
                         courseNum = event.message.text
                         uid = event.source.user_id  # 取user id
 
-                        getCourse(courseNum, uid)
-                        if getCourse:
+                        setCourse(courseNum, uid)
+                        if setCourse:
                             line_bot_api.reply_message(
                                 event.reply_token, TextSendMessage(text="綁定成功")
                             )
 
                     except Exception:
                         line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="綁定失敗，請再輸入一次")
+                            event.reply_token,
+                            TextSendMessage(text="綁定失敗請再輸入一次，格式需完整填寫"),
                         )
                 elif rcMsg == "綁定":
                     line_bot_api.reply_message(
@@ -84,6 +84,10 @@ def callback(request):
                             ),
                         ),
                     )
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token, TextSendMessage(text="很抱歉，我們不能處理這則訊息")
+                )
 
         return HttpResponse()
     else:
@@ -111,15 +115,39 @@ def callback(request):
 
 
 def notice(Userid):
-    line_bot_api.push_message(
-        Userid,
-        TextSendMessage(text=f"您有一堂：{getTargetDetail(check_date_in_sheet()[0])}在明天。"),
-    )
+    emoji = [
+        {"index": 7, "productId": "5ac21a13031a6752fb806d57", "emojiId": "142"},
+    ]
+
+    detail = getTargetDetail(check_date_in_sheet())
+    # print(detail)
+    if detail:
+        t = f"您有課程在明天${detail}"
+        line_bot_api.push_message(
+            Userid,
+            TextSendMessage(
+                text=t,
+                emojis=emoji,
+            ),
+        )
 
 
-while True:
-    item = check_date_in_sheet()
-    if item:
-        userid = getCourseNum(item[0])
-        notice(userid)
-    time.sleep(60)
+# ===============
+# 先綁定再做
+# ================
+
+import time
+
+
+def doChecking():
+    while True:
+        item = check_date_in_sheet()
+        if item:
+            userid = getCourseNum(item[0])
+            notice(userid)
+        else:
+            time.sleep(60)  # 休息 60 秒後再次檢查
+            continue  # 繼續執行下一次的 doChecking()
+
+
+doChecking()

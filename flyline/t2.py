@@ -7,11 +7,11 @@ import time
 
 gc = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
 # open the google spreadsheet
-sh = gc.open_by_key("yuor sheet id")
+sh = gc.open_by_key("1OQOV7ZACMvKVglJ50sHTG7OAG_R3UbKa0TrDrg0V7u8")
 wks = sh.worksheet_by_title("tour1")
 gc2 = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
 # open the google spreadsheet
-sh2 = gc2.open_by_key("yuor sheet id")
+sh2 = gc2.open_by_key("1KYsTpbF6eiTT3-GP3VFlXdiOWe8WwCa5z6ZA1XC1RKk")
 # select the first worksheet
 wks2 = sh2.worksheet_by_title("teacher")
 
@@ -22,15 +22,12 @@ def getCourseNum(item):
         for i in nums:
             r = int(i.row)
             c = int(i.col)
-            item = wks2.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
-            return item  # 取出userid
+            userid = wks2.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
+            return userid  # 取出userid
     except Exception:
-        return False
+        return 0
 
 
-# 綁定後 從userid找課號
-# 先取出此刻號有幾堂課and日期，再做
-# 再tour李find tcinfo，取出日期
 def getTargetDetail(item):
     results = wks.find(item)
     results = results[0].value.split(",")  # 找到包含課號的第一個，再以","分割
@@ -39,6 +36,8 @@ def getTargetDetail(item):
         # print(result.strip())
         result = result.strip()
         # 一列以空格區分([0]課號[1]日期[2]時間) => C01-1 12/29(五) 19:00-22:00數學
+
+        # print(result)
         return result
 
 
@@ -47,33 +46,36 @@ def getTargetDetail(item):
 # 再由日期對應課號找到userid
 def check_date_in_sheet():
     # 檢查試算表中的日期欄位
-    # 透過 Google Sheets API 讀取特定範圍的日期欄位，這裡以 A1:D3 為例
-    all_values = wks.get_all_values()
+    try:
+        all_values = wks.get_all_values()
 
-    # Regular expression pattern to find course numbers and associated dates
-    pattern = re.compile(r"\b[A-Za-z]\w*-\d+")
-    date_pattern = re.compile(r"\b\d{1,2}/\d{1,2}")
+        # Regular expression pattern to find course numbers and associated dates
+        pattern = re.compile(r"\b[A-Za-z]\w*-\d+")
+        date_pattern = re.compile(r"\b\d{1,2}/\d{1,2}")
 
-    # Dictionary to store course numbers and associated dates
-    courses_with_dates = {}
+        # Dictionary to store course numbers and associated dates
+        courses_with_dates = {}
 
-    # Collect course numbers and associated dates
-    for row in all_values:
-        for cell in row:
-            course_matches = pattern.findall(cell)
-            date_matches = date_pattern.findall(cell)
-            for course, date in zip(course_matches, date_matches):
-                courses_with_dates[course] = date
-    today = datetime.date.today()
-    next_day = today + datetime.timedelta(days=1)
-    formatted_next_day = next_day.strftime("%m/%d")
-    # Display course numbers with associated dates
-    for course, date in courses_with_dates.items():
-        if formatted_next_day == date:
-            # print(f"{date}有課程{course}")
-            return course, date
+        # Collect course numbers and associated dates
+        for row in all_values:
+            for cell in row:
+                course_matches = pattern.findall(cell)
+                date_matches = date_pattern.findall(cell)
+                for course, date in zip(course_matches, date_matches):
+                    courses_with_dates[course] = date
+        today = datetime.date.today()
+        next_day = today + datetime.timedelta(days=1)
+        formatted_next_day = next_day.strftime("%m/%d")
+        # 用於儲存符合條件的課程資訊
+        for course, date in courses_with_dates.items():
+            # print(course, date)
+            if formatted_next_day == date:
+                return formatted_next_day
+
+    except Exception:
+        return 0
 
 
-print(getTargetDetail(check_date_in_sheet()[0]))
+# print(getTargetDetail(check_date_in_sheet()[0]))
 # getCourses("C01-1")
 # print(noticeTeacher("12/26"))
