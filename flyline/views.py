@@ -32,7 +32,7 @@ def callback(request):
     if request.method == "POST":
         signature = request.META["HTTP_X_LINE_SIGNATURE"]
         body = request.body.decode("utf-8")
-        global Userid
+
         try:
             events = parser.parse(body, signature)
         except InvalidSignatureError:
@@ -54,12 +54,12 @@ def callback(request):
                     try:
                         courseNum = event.message.text
                         uid = event.source.user_id  # 取user id
+
                         getCourse(courseNum, uid)
                         if getCourse:
                             line_bot_api.reply_message(
                                 event.reply_token, TextSendMessage(text="綁定成功")
                             )
-                        Userid = uid
 
                     except Exception:
                         line_bot_api.reply_message(
@@ -90,36 +90,36 @@ def callback(request):
         return HttpResponseBadRequest()
 
 
-def noticeTeacher(date):
-    match = re.search(r"(\d{1,2})/(\d{1,2})", date)
-    if match:
-        month = int(match.group(1))
-        day = int(match.group(2))
-        year = datetime.datetime.now().year  # 取得當前年份
-        extracted_date = datetime.date(year, month, day)
-        today = datetime.date.today().strftime("%m/%d")  # 獲取當前日期，格式為 MM/DD
-        rdate = extracted_date.strftime("%m/%d")  # 表單上的日期
-        target_date = extracted_date - datetime.timedelta(days=1)
-        schedule_date = target_date.strftime("%m/%d")  # 表單上的日期的前一天(目標日)
-        # print(schedule_date)
-        if today == schedule_date:
-            return target_date
-        # print(f"日期 {schedule_date} 是今天目標日，表單上 {rdate} 欄位，{target_date}")
-    else:
-        return None  # 如果未找到匹配的日期格式，返回 None 或者其他您認為適合的值
+# def noticeTeacher(date,uid):
+#     match = re.search(r"(\d{1,2})/(\d{1,2})", date)
+#     if match:
+#         month = int(match.group(1))
+#         day = int(match.group(2))
+#         year = datetime.datetime.now().year  # 取得當前年份
+#         extracted_date = datetime.date(year, month, day)
+#         today = datetime.date.today().strftime("%m/%d")  # 獲取當前日期，格式為 MM/DD
+#         rdate = extracted_date.strftime("%m/%d")  # 表單上的日期
+#         target_date = extracted_date - datetime.timedelta(days=1)
+#         schedule_date = target_date.strftime("%m/%d")  # 表單上的日期的前一天(目標日)
+#         # print(schedule_date)
+#         if today == schedule_date:
+#             notice(uid)
+#             return target_date
+#         # print(f"日期 {schedule_date} 是今天目標日，表單上 {rdate} 欄位，{target_date}")
+#     else:
+#         return None  # 如果未找到匹配的日期格式，返回 None 或者其他您認為適合的值
 
 
-def notice():
+def notice(Userid):
     line_bot_api.push_message(
         Userid,
-        TextSendMessage(text=f"您有一堂：{getTargetDate(getCourseNum(Userid))[0]}在明天。"),
+        TextSendMessage(text=f"您有一堂：{getTargetDetail(check_date_in_sheet()[0])}在明天。"),
     )
 
 
-# while True:
-#     schedule.run_pending()
-#     time.sleep(60)
-classNum = getCourseNum(Userid)  # 課號
-noticeDate = getTargetDate(classNum)[1]  # 表單上的日期
-schedule_date = noticeTeacher(noticeDate, Userid)  # 通知日期
-schedule.every(1).minutes.do(notice()).at(schedule_date)
+while True:
+    item = check_date_in_sheet()
+    if item:
+        userid = getCourseNum(item[0])
+        notice(userid)
+    time.sleep(60)
