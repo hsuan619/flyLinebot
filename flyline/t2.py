@@ -7,11 +7,11 @@ import time
 
 gc = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
 # open the google spreadsheet
-sh = gc.open_by_key("1OQOV7ZACMvKVglJ50sHTG7OAG_R3UbKa0TrDrg0V7u8")
+sh = gc.open_by_key("yuor sheet id")
 wks = sh.worksheet_by_title("tour1")
 gc2 = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
 # open the google spreadsheet
-sh2 = gc2.open_by_key("1KYsTpbF6eiTT3-GP3VFlXdiOWe8WwCa5z6ZA1XC1RKk")
+sh2 = gc2.open_by_key("yuor sheet id")
 # select the first worksheet
 wks2 = sh2.worksheet_by_title("teacher")
 
