@@ -9,7 +9,7 @@ def getCourse(num, user):
             service_file="D:/SideProject/flight/flyline/flybot.json"
         )
         # open the google spreadsheet
-        sh = gc.open_by_key("1KYsTpbF6eiTT3-GP3VFlXdiOWe8WwCa5z6ZA1XC1RKk")
+        sh = gc.open_by_key("yuor sheet id")
 
         # select the first worksheet
         wks = sh.worksheet_by_title("teacher")
