@@ -59,17 +59,18 @@ def callback(request):
                             ),
                         ),
                     )
-                # elif "c" in event.message.text or "C" in event.message.text:
-                #     profile = event[0].source.userId
-                #     course = event.message.text
-                #     getCourse(course, profile)
-                #     if getCourse:
-                #         msg.append(TextSendMessage(text="綁定成功！"))
+                elif "c" in event.message.text or "C" in event.message.text:
+                    courseNum = event.message.text
+                    uid = event.source.user_id  # 取user id
+                    getCourse(courseNum, uid)
+                    if getCourse:
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="綁定成功")
+                        )
             elif isinstance(event, PostbackEvent):  # 如果有回傳值事件
                 if event.postback.data == "老師":
-                    uid = event.source.user_id
                     line_bot_api.reply_message(
-                        event.reply_token, TextSendMessage(text=uid)
+                        event.reply_token, TextSendMessage(text="請輸入課號:(多個請以空格區分 至多3個)")
                     )
 
         return HttpResponse()

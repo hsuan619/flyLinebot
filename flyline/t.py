@@ -16,7 +16,7 @@ def getCourse(num, user):
         # select the first worksheet
         wks = sh.worksheet_by_title("teacher")
         df = pd.DataFrame(wks.get_all_records())
-        wks.set_dataframe(df, "A2")  # 從欄位 A1 開始
+        wks.set_dataframe(df, "A1")  # 從欄位 A1 開始
         c = " "
         if c in num:
             listnum = num.split(" ")
