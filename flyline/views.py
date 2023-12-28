@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from flyline.t import *
 from flyline.t2 import *
+from threading import Thread
+import time
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Create your views here.
 from django.conf import settings
@@ -18,6 +21,7 @@ from linebot.models import (
     QuickReply,
     QuickReplyButton,
     MessageTemplateAction,
+    ConfirmTemplate,
     PostbackEvent,
     PostbackAction,
     PostbackTemplateAction,
@@ -25,6 +29,37 @@ from linebot.models import (
 
 line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
+
+
+def notice(Userid, detail):
+    emoji = [
+        {"index": 7, "productId": "5ac21a13031a6752fb806d57", "emojiId": "142"},
+    ]
+
+    # print(detail)
+    if detail:
+        t = f"您有課程在明天$\n{detail}"
+        line_bot_api.push_message(
+            Userid,
+            TextSendMessage(
+                text=t,
+                emojis=emoji,
+            ),
+        )
+
+
+def check_spreadsheet():
+    try:
+        numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
+        if numAndDate:  # 如果有
+            detail = getDetailByDate(numAndDate)
+            user = getUser(numAndDate)
+            notice(user, detail)  # 通知
+        else:
+            print("not find")
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
+        time.sleep(10)
 
 
 @csrf_exempt
@@ -41,31 +76,28 @@ def callback(request):
             return HttpResponseBadRequest()
 
         for event in events:
-            if isinstance(event, PostbackEvent):  # 如果有回傳值事件
+            if isinstance(event, PostbackEvent):  # 如果有postback事件
                 if event.postback.data == "老師":
                     line_bot_api.reply_message(
-                        event.reply_token, TextSendMessage(text="請輸入課號:(多個請以空格區分 至多3個)")
+                        event.reply_token,
+                        TextSendMessage(
+                            text="請輸入課號及日期，多個以逗號區分：(請務必依照格式ex: C02-1 12/27, C02-2 12/30)"
+                        ),
                     )
-
+                elif event.postback.data == "學生":
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="目前不開放學生綁定"),
+                    )
+                if event.postback.data == "刪除":
+                    delUser(event.source.user_id)
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="刪除成功"),
+                    )
             elif isinstance(event, MessageEvent):
                 rcMsg = event.message.text
-                if "-" in rcMsg:
-                    try:
-                        courseNum = event.message.text
-                        uid = event.source.user_id  # 取user id
-
-                        setCourse(courseNum, uid)
-                        if setCourse:
-                            line_bot_api.reply_message(
-                                event.reply_token, TextSendMessage(text="綁定成功")
-                            )
-
-                    except Exception:
-                        line_bot_api.reply_message(
-                            event.reply_token,
-                            TextSendMessage(text="綁定失敗請再輸入一次，格式需完整填寫"),
-                        )
-                elif rcMsg == "綁定":
+                if rcMsg == "綁定":
                     line_bot_api.reply_message(
                         event.reply_token,
                         TemplateSendMessage(
@@ -84,70 +116,68 @@ def callback(request):
                             ),
                         ),
                     )
-            else:
-                line_bot_api.reply_message(
-                    event.reply_token, TextSendMessage(text="很抱歉，我們不能處理這則訊息")
-                )
+                elif rcMsg == "解除綁定":
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TemplateSendMessage(
+                            alt_text="Confirm template",
+                            template=ConfirmTemplate(
+                                text="您確定要解除綁定?(會一併刪除所有紀錄)",
+                                actions=[
+                                    PostbackAction(label="是", text="是", data="刪除"),
+                                    PostbackTemplateAction(
+                                        label="否", text="否", data="不刪除"
+                                    ),
+                                ],
+                            ),
+                        ),
+                    )
 
-        return HttpResponse()
-    else:
-        return HttpResponseBadRequest()
+                elif ("-") in rcMsg:
+                    uid = event.source.user_id  # 取user id
+                    if isExit(rcMsg):  # 如果存在
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="資料已存在")
+                        )
+                    else:
+                        setCourse(rcMsg, uid)  # 不存在則寫入
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="綁定成功")
+                        )
+                elif rcMsg == "查詢":
+                    if getDeatilByUser(uid):  # 如果這個人的資料存在
+                        cour = getDeatilByUser(uid)
+                        detail = getDetailByDate(cour)
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            TextSendMessage(text="本月課程有:\n" + detail),
+                        )
+                    else:
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            TextSendMessage(text="無您的資料，請重新綁定通知"),
+                        )
+                # else:
+                #     line_bot_api.reply_message(
+                #         event.reply_token,
+                #         TextSendMessage(text="綁定失敗。請再輸入一次，格式需完整填寫"),
+                #     )
+            return HttpResponse()
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="無法處理訊息"),
+            )
+            return HttpResponseBadRequest()
 
 
-# def noticeTeacher(date,uid):
-#     match = re.search(r"(\d{1,2})/(\d{1,2})", date)
-#     if match:
-#         month = int(match.group(1))
-#         day = int(match.group(2))
-#         year = datetime.datetime.now().year  # 取得當前年份
-#         extracted_date = datetime.date(year, month, day)
-#         today = datetime.date.today().strftime("%m/%d")  # 獲取當前日期，格式為 MM/DD
-#         rdate = extracted_date.strftime("%m/%d")  # 表單上的日期
-#         target_date = extracted_date - datetime.timedelta(days=1)
-#         schedule_date = target_date.strftime("%m/%d")  # 表單上的日期的前一天(目標日)
-#         # print(schedule_date)
-#         if today == schedule_date:
-#             notice(uid)
-#             return target_date
-#         # print(f"日期 {schedule_date} 是今天目標日，表單上 {rdate} 欄位，{target_date}")
-#     else:
-#         return None  # 如果未找到匹配的日期格式，返回 None 或者其他您認為適合的值
-
-
-def notice(Userid):
-    emoji = [
-        {"index": 7, "productId": "5ac21a13031a6752fb806d57", "emojiId": "142"},
-    ]
-
-    detail = getTargetDetail(check_date_in_sheet())
-    # print(detail)
-    if detail:
-        t = f"您有課程在明天${detail}"
-        line_bot_api.push_message(
-            Userid,
-            TextSendMessage(
-                text=t,
-                emojis=emoji,
-            ),
-        )
-
-
+scheduler = BackgroundScheduler()
+scheduler.add_job(check_spreadsheet, "interval", seconds=60)  # 每10秒執行
+# scheduler.add_job(check_spreadsheet, 'cron', hour='15,19')  # 設定每天的下午3點及晚上7點（24小時制）
+scheduler.start()
 # ===============
 # 先綁定再做
 # ================
 
-import time
 
-
-def doChecking():
-    while True:
-        item = check_date_in_sheet()
-        if item:
-            userid = getCourseNum(item[0])
-            notice(userid)
-        else:
-            time.sleep(60)  # 休息 60 秒後再次檢查
-            continue  # 繼續執行下一次的 doChecking()
-
-
-doChecking()
+# 部屬後設定，每日12, 18執行doChecking更新

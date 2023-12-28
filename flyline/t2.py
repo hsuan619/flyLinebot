@@ -1,81 +1,201 @@
 import pygsheets
 import pandas as pd
-import re
-import datetime
 import schedule
 import time
-
-gc = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
-# open the google spreadsheet
-sh = gc.open_by_key("1OQOV7ZACMvKVglJ50sHTG7OAG_R3UbKa0TrDrg0V7u8")
-wks = sh.worksheet_by_title("tour1")
-gc2 = pygsheets.authorize(service_file="D:/SideProject/flight/flyline/flybot.json")
-# open the google spreadsheet
-sh2 = gc2.open_by_key("1KYsTpbF6eiTT3-GP3VFlXdiOWe8WwCa5z6ZA1XC1RKk")
-# select the first worksheet
-wks2 = sh2.worksheet_by_title("teacher")
+from datetime import datetime, timedelta
 
 
-def getCourseNum(item):
-    try:
-        nums = wks2.find(item)  # 找userId位置
-        for i in nums:
+auth_file = "flyline/flybot.json"
+gc = pygsheets.authorize(service_file=auth_file)
+sheet_id = "1KYsTpbF6eiTT3-GP3VFlXdiOWe8WwCa5z6ZA1XC1RKk"
+sh = gc.open_by_key(sheet_id)
+
+
+wks = sh.worksheet_by_title("course")
+wks2 = sh.worksheet_by_title("teacher")
+
+
+def setCourse(num, user):
+    # If multiple numbers are provided, split them and update the worksheet for each number
+    num_list = num.split(",")
+
+    for n in num_list:
+        row = (
+            len(wks2.get_col(1, returnas="cell", include_empty=False)) + 1
+        )  # Find the next available row
+        n = n.strip()
+        # print(n)
+        wks2.update_values(f"A{row}", [[n]])  # Add the data to the next avai
+        wks2.update_values(f"B{row}", [[user]])
+
+
+def isExit(reList):
+    reList = reList.split(",")  # list
+    for n in reList:
+        n = n.strip()
+        if wks2.find(n):
+            return True
+        else:
+            return False
+
+
+def getDeatilByUser(id):
+    results = wks2.find(id)
+    reList = []
+    for i in results:
+        r = int(i.row)
+        c = int(i.col)
+        re = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
+        reList.append(re)
+    # getDetailByDate(reList)
+    return reList
+    # print(reList)
+    # return re  # 取出課號+日期
+    # getTargetDetail(re)
+
+
+# def delUser(id):
+#     results = wks2.find(id)
+#     if results:
+#         for i in results:
+#             r = int(i.row)
+#             c = int(i.col)
+#             # print(r, c)
+#             wks2.update_values(i.label, [[" "]])
+#             wks2.update_values((r, c - 1), [[" "]])
+#             wks2.delete_rows(r)
+#             print("刪除成功")
+#     else:
+#         print("刪除失敗")
+
+
+def delUser(id):
+    rows = []
+    results = wks2.find(id)
+    if results:
+        for i in results:
             r = int(i.row)
-            c = int(i.col)
-            userid = wks2.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
-            return userid  # 取出userid
-    except Exception:
-        return 0
+            rows.append(r)
+        print(rows[0], r)  # 第一row及最後row
+        # wks2.update_values(i.label, [[" "]])
+        # wks2.update_values((r, c - 1), [[" "]])
+
+        wks2.delete_rows(rows[0], r)  # 起始,結束
+        print("刪除成功")
+    else:
+        print("刪除失敗")
 
 
-def getTargetDetail(item):
-    results = wks.find(item)
-    results = results[0].value.split(",")  # 找到包含課號的第一個，再以","分割
-    # print(results)
-    for result in results:
-        # print(result.strip())
-        result = result.strip()
-        # 一列以空格區分([0]課號[1]日期[2]時間) => C01-1 12/29(五) 19:00-22:00數學
+def getUser(re):
+    for r in re:
+        target = wks2.find(r)
+        for t in target:
+            r = int(t.row)
+            c = int(t.col)
+            user = wks2.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
+            return user
 
-        # print(result)
-        return result
+
+# list = getDeatilByUser("U40312c953c499d83cb749fc62140c42e")
+# # print(getDeatilByUser("U40312c953c499d83cb749fc62140c42e"))
+# print(getDetailByDate(list))
 
 
 # ==========1225
 # 持續檢查欄位是否有相近日期
 # 再由日期對應課號找到userid
+# 先找日期
+# 找課號對應他給的試算表
+# 取出內容
+# 對應User傳通知
+
+
+def get_next_day(date_string: str) -> str:
+    """Return the next day as a formatted string (MM/DD)"""
+    date_object = datetime.strptime(date_string, "%m/%d")
+    next_day = date_object + timedelta(days=1)
+    return next_day.strftime("%m/%d")
+
+
+def get_pre_day(date_string: str) -> str:
+    """Return the next day as a formatted string (MM/DD)"""
+    date_object = datetime.strptime(date_string, "%m/%d")
+    pre_day = date_object - timedelta(days=1)
+    return pre_day.strftime("%m/%d")
+
+
+def getToday():
+    today = datetime.today().strftime("%m/%d")
+    return today
+
+
+def getDetailByDate(reList):  # 從課表抓詳細課程.
+    resultList = ""
+    for r in reList:
+        results = wks.find(r)
+        if results:
+            # print(results[0].value)
+            resultList = (results[0].value) + "\n" + resultList
+            resultList = resultList.strip()
+        else:
+            print("沒有符合")
+            return 0
+    return resultList
+
+
 def check_date_in_sheet():
     # 檢查試算表中的日期欄位
     try:
-        all_values = wks.get_all_values()
-
-        # Regular expression pattern to find course numbers and associated dates
-        pattern = re.compile(r"\b[A-Za-z]\w*-\d+")
-        date_pattern = re.compile(r"\b\d{1,2}/\d{1,2}")
-
-        # Dictionary to store course numbers and associated dates
-        courses_with_dates = {}
-
-        # Collect course numbers and associated dates
-        for row in all_values:
-            for cell in row:
-                course_matches = pattern.findall(cell)
-                date_matches = date_pattern.findall(cell)
-                for course, date in zip(course_matches, date_matches):
-                    courses_with_dates[course] = date
-        today = datetime.date.today()
-        next_day = today + datetime.timedelta(days=1)
-        formatted_next_day = next_day.strftime("%m/%d")
-        # 用於儲存符合條件的課程資訊
-        for course, date in courses_with_dates.items():
-            # print(course, date)
-            if formatted_next_day == date:
-                return formatted_next_day
+        # all_values = wks2.get_all_values()
+        delExpireRow()
+        next_day = get_next_day(getToday())
+        # print(today, next_day)
+        target = wks2.find(next_day)
+        if target:
+            re = []
+            for t in target:
+                re.append(t.value)
+            print(re)
+            return re
+        else:
+            print("今天無")
 
     except Exception:
         return 0
 
 
-# print(getTargetDetail(check_date_in_sheet()[0]))
-# getCourses("C01-1")
-# print(noticeTeacher("12/26"))
+def delExpireRow():
+    expireDate = get_pre_day(getToday())
+    expireTarget = wks2.find(expireDate)
+    if expireTarget:
+        rows = []
+        print(expireTarget)
+        for t in expireTarget:
+            r = int(t.row)
+            rows.append(r)
+        print(rows[0], r)  # 第一row及最後row
+        wks2.delete_rows(rows[0], r)  # 起始,結束
+        return 1
+        # print(getToday())
+        # print("刪除過期成功")
+    else:
+        return 0
+
+
+# def notice(Userid, detail):
+#     t = f"{Userid}您有課程在明天${detail}"
+#     print(t)
+
+
+# test============================================
+# numAndDate = check_date_in_sheet()
+# if numAndDate:
+#     detail = getDetailByDate(numAndDate)
+#     user = getUser(numAndDate)
+#     print(f"id: {user} \ndetail: {detail}")
+# else:
+#     print("not find")
+
+
+# user = check_date_in_sheet()[0]
+# searchItem = check_date_in_sheet()[1]
