@@ -40,6 +40,7 @@ def isExit(reList):
 
 
 def getDeatilByUser(id):
+    delExpireRow()
     results = wks2.find(id)
     reList = []
     for i in results:
@@ -48,8 +49,9 @@ def getDeatilByUser(id):
         re = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
         reList.append(re)
     # getDetailByDate(reList)
+    print(reList)
     return reList
-    # print(reList)
+
     # return re  # 取出課號+日期
     # getTargetDetail(re)
 
@@ -133,13 +135,14 @@ def getDetailByDate(reList):  # 從課表抓詳細課程.
     resultList = ""
     for r in reList:
         results = wks.find(r)
+        # print(results)
         if results:
             # print(results[0].value)
             resultList = (results[0].value) + "\n" + resultList
             resultList = resultList.strip()
+
         else:
-            print("沒有符合")
-            return 0
+            return "沒有符合"
     return resultList
 
 
@@ -151,15 +154,14 @@ def check_date_in_sheet():
         next_day = get_next_day(getToday())
         # print(today, next_day)
         target = wks2.find(next_day)
+        re = []
         if target:
-            re = []
             for t in target:
                 re.append(t.value)
-            print(re)
-            return re
+
         else:
             print("今天無")
-
+        return re
     except Exception:
         return 0
 
@@ -182,6 +184,11 @@ def delExpireRow():
         return 0
 
 
+# numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
+# if numAndDate:  # 如果有
+#     detail = getDetailByDate(numAndDate)
+#     user = getUser(numAndDate)
+# print(type(detail))
 # def notice(Userid, detail):
 #     t = f"{Userid}您有課程在明天${detail}"
 #     print(t)

@@ -1,5 +1,3 @@
-from django.shortcuts import render
-from flyline.t import *
 from flyline.t2 import *
 from threading import Thread
 import time
@@ -51,10 +49,12 @@ def notice(Userid, detail):
 def check_spreadsheet():
     try:
         numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
+        print(numAndDate)
         if numAndDate:  # 如果有
             detail = getDetailByDate(numAndDate)
             user = getUser(numAndDate)
             notice(user, detail)  # 通知
+            print("通知成功")
         else:
             print("not find")
     except (KeyboardInterrupt, SystemExit):
@@ -76,6 +76,7 @@ def callback(request):
             return HttpResponseBadRequest()
 
         for event in events:
+            uid = event.source.user_id  # 取user id
             if isinstance(event, PostbackEvent):  # 如果有postback事件
                 if event.postback.data == "老師":
                     line_bot_api.reply_message(
@@ -116,6 +117,17 @@ def callback(request):
                             ),
                         ),
                     )
+                if ("-") in rcMsg:
+                    if isExit(rcMsg):  # 如果存在
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="資料已存在")
+                        )
+                    else:
+                        setCourse(rcMsg, uid)  # 不存在則寫入
+                        line_bot_api.reply_message(
+                            event.reply_token, TextSendMessage(text="綁定成功")
+                        )
+
                 elif rcMsg == "解除綁定":
                     line_bot_api.reply_message(
                         event.reply_token,
@@ -133,21 +145,10 @@ def callback(request):
                         ),
                     )
 
-                elif ("-") in rcMsg:
-                    uid = event.source.user_id  # 取user id
-                    if isExit(rcMsg):  # 如果存在
-                        line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="資料已存在")
-                        )
-                    else:
-                        setCourse(rcMsg, uid)  # 不存在則寫入
-                        line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="綁定成功")
-                        )
-                elif rcMsg == "查詢":
-                    if getDeatilByUser(uid):  # 如果這個人的資料存在
-                        cour = getDeatilByUser(uid)
-                        detail = getDetailByDate(cour)
+                elif rcMsg == "查詢(查詢需等待)":
+                    c = getDeatilByUser(uid)
+                    if c:  # 如果這個人的資料存在
+                        detail = getDetailByDate(c)
                         line_bot_api.reply_message(
                             event.reply_token,
                             TextSendMessage(text="本月課程有:\n" + detail),
@@ -157,23 +158,23 @@ def callback(request):
                             event.reply_token,
                             TextSendMessage(text="無您的資料，請重新綁定通知"),
                         )
-                # else:
-                #     line_bot_api.reply_message(
-                #         event.reply_token,
-                #         TextSendMessage(text="綁定失敗。請再輸入一次，格式需完整填寫"),
-                #     )
-            return HttpResponse()
-        else:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text="無法處理訊息"),
-            )
-            return HttpResponseBadRequest()
+                elif event.message.type == "sticker":
+                    line_bot_api.reply_message(
+                        event.reply_token, TextSendMessage(text="收到你的貼圖囉！")
+                    )
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="無法處理訊息"),
+                )
+        return HttpResponse()
+    else:   
+        return HttpResponseBadRequest()
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(check_spreadsheet, "interval", seconds=60)  # 每10秒執行
-# scheduler.add_job(check_spreadsheet, 'cron', hour='15,19')  # 設定每天的下午3點及晚上7點（24小時制）
+# scheduler.add_job(check_spreadsheet, "interval", seconds=60)  # 每60秒執行
+scheduler.add_job(check_spreadsheet, "cron", hour="14,16,18,20")  # 設定每天的下午3點及晚上7點（24小時制）
 scheduler.start()
 # ===============
 # 先綁定再做
