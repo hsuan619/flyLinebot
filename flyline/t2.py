@@ -24,10 +24,11 @@ def setCourse(num, user):
             len(wks2.get_col(1, returnas="cell", include_empty=False)) + 1
         )  # Find the next available row
         n = n.strip()
-        # print(n)
         wks2.update_values(f"A{row}", [[n]])  # Add the data to the next avai
         wks2.update_values(f"B{row}", [[user]])
-
+        
+        n = n.split(" ")
+        wks2.update_values(f"C{row}", [[n[1]]])
 
 def isExit(reList):
     reList = reList.split(",")  # list
@@ -49,7 +50,7 @@ def getDeatilByUser(id):
         re = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
         reList.append(re)
     # getDetailByDate(reList)
-    print(reList)
+    
     return reList
 
     # return re  # 取出課號+日期
@@ -132,9 +133,12 @@ def getToday():
 
 
 def getDetailByDate(reList):  # 從課表抓詳細課程.
+    
     resultList = ""
     for r in reList:
+        
         results = wks.find(r)
+        
         # print(results)
         if results:
             # print(results[0].value)
@@ -154,6 +158,7 @@ def check_date_in_sheet():
         next_day = get_next_day(getToday())
         # print(today, next_day)
         target = wks2.find(next_day)
+        print(f'在{target}')
         re = []
         if target:
             for t in target:
@@ -171,11 +176,11 @@ def delExpireRow():
     expireTarget = wks2.find(expireDate)
     if expireTarget:
         rows = []
-        print(expireTarget)
+        # print(expireTarget)
         for t in expireTarget:
             r = int(t.row)
             rows.append(r)
-        print(rows[0], r)  # 第一row及最後row
+        # print(rows[0], r)  # 第一row及最後row
         wks2.delete_rows(rows[0], r)  # 起始,結束
         return 1
         # print(getToday())
