@@ -9,9 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 APP_NAME = os.environ.get("FLY_APP_NAME")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-LINE_CHANNEL_ACCESS_TOKEN = "oPfO16vQOYT+7nHYUmUZ67tQX4FpNmEzbnd6lnLBDscB1PQ22c8Vnei2DCRIf94EhJtyFzRUjGWJ4wdikOiD+uxJ8QlULl/76r/er4XY1sUepPLLsVYmm074L/ZZx2yDtNedL6WFi5Eo8ljhVoq/jgdB04t89/1O/w1cDnyilFU="
+LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 
-LINE_CHANNEL_SECRET = "88c24b64b2af3ea8b6597232821c24e5"
+LINE_CHANNEL_SECRET =  os.environ.get("LINE_CHANNEL_SECRET")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-cphv7=2s*9w-u84y^+xo51g%v)$0s9@@f3d%qd_=bkfx^0ptt="
 
