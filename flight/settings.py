@@ -16,7 +16,7 @@ LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 SECRET_KEY = "django-insecure-cphv7=2s*9w-u84y^+xo51g%v)$0s9@@f3d%qd_=bkfx^0ptt="
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
