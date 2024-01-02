@@ -15,62 +15,61 @@ wks = sh.worksheet_by_title("course")
 wks2 = sh.worksheet_by_title("teacher")
 
 
-def setCourse(num, user):
+def setCourse(name, user):
     # If multiple numbers are provided, split them and update the worksheet for each number
-    num_list = num.split(",")
+    # num_list = num.split(",")
 
-    for n in num_list:
+    # for n in num_list:
         row = (
             len(wks2.get_col(1, returnas="cell", include_empty=False)) + 1
         )  # Find the next available row
-        n = n.strip()
-        wks2.update_values(f"A{row}", [[n]])  # Add the data to the next avai
+    #     n = n.strip()
+        wks2.update_values(f"A{row}", [[name]])  # Add the data to the next avai
         wks2.update_values(f"B{row}", [[user]])
         
-        n = n.split(" ")
-        wks2.update_values(f"C{row}", [[n[1]]])
-
-def isExit(reList):
-    reList = reList.split(",")  # list
-    for n in reList:
-        n = n.strip()
-        if wks2.find(n):
-            return True
-        else:
-            return False
+        # n = n.split(" ")
+        # wks2.update_values(f"C{row}", [[n[1]]])
 
 
 def getDeatilByUser(id):
-    delExpireRow()
     results = wks2.find(id)
-    reList = []
-    for i in results:
-        r = int(i.row)
-        c = int(i.col)
-        re = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
-        reList.append(re)
-    # getDetailByDate(reList)
-    
-    return reList
+    if(results):
+        courseList = []
+        for i in results:
+            r = int(i.row)
+            c = int(i.col)
+            name = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
+        detail = wks.find(name)
+        for n in detail:
+            rn = int(n.row)
+            dt = wks.get_value(f"A{rn}")
+            
+            courseList.append(dt)
+        courseList = '\n'.join(courseList)
+        return courseList #['Speaking Part 1 & 2 01/03(三)', 'Speaking Part 2 & 3 01/05(三)']
+    else:
+        return False
 
-    # return re  # 取出課號+日期
-    # getTargetDetail(re)
 
-
-# def delUser(id):
-#     results = wks2.find(id)
-#     if results:
-#         for i in results:
-#             r = int(i.row)
-#             c = int(i.col)
-#             # print(r, c)
-#             wks2.update_values(i.label, [[" "]])
-#             wks2.update_values((r, c - 1), [[" "]])
-#             wks2.delete_rows(r)
-#             print("刪除成功")
-#     else:
-#         print("刪除失敗")
-
+def getUser(re):
+    name = []
+    idList = []
+    for r in re:
+        target_detail = wks.find(r)
+        
+        if(target_detail):
+            for t in target_detail:
+                r = t.row
+                n = wks.get_value(f"B{r}") #name
+                name.append(n)
+    for id in name:
+        target_id = wks2.find(id)
+        for td in target_id:
+            r = td.row
+            id = wks2.get_value(f"B{r}") #name
+            idList.append(id)
+    return idList
+    # return name
 
 def delUser(id):
     rows = []
@@ -78,39 +77,11 @@ def delUser(id):
     if results:
         for i in results:
             r = int(i.row)
-            rows.append(r)
-        print(rows[0], r)  # 第一row及最後row
-        # wks2.update_values(i.label, [[" "]])
-        # wks2.update_values((r, c - 1), [[" "]])
-
-        wks2.delete_rows(rows[0], r)  # 起始,結束
+            
+            wks2.delete_rows(r, 1)  # 起始,結束
         print("刪除成功")
     else:
         print("刪除失敗")
-
-
-def getUser(re):
-    for r in re:
-        target = wks2.find(r)
-        for t in target:
-            r = int(t.row)
-            c = int(t.col)
-            user = wks2.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
-            return user
-
-
-# list = getDeatilByUser("U40312c953c499d83cb749fc62140c42e")
-# # print(getDeatilByUser("U40312c953c499d83cb749fc62140c42e"))
-# print(getDetailByDate(list))
-
-
-# ==========1225
-# 持續檢查欄位是否有相近日期
-# 再由日期對應課號找到userid
-# 先找日期
-# 找課號對應他給的試算表
-# 取出內容
-# 對應User傳通知
 
 
 def get_next_day(date_string: str) -> str:
@@ -154,11 +125,11 @@ def check_date_in_sheet():
     # 檢查試算表中的日期欄位
     try:
         # all_values = wks2.get_all_values()
-        delExpireRow()
+        # delExpireRow()
         next_day = get_next_day(getToday())
         # print(today, next_day)
-        target = wks2.find(next_day)
-        print(f'在{target}')
+        target = wks.find(next_day)
+        # print(f'在{target}')
         re = []
         if target:
             for t in target:
@@ -166,48 +137,28 @@ def check_date_in_sheet():
 
         else:
             print("今天無")
+        
         return re
     except Exception:
         return 0
-
-
-def delExpireRow():
-    expireDate = get_pre_day(getToday())
-    expireTarget = wks2.find(expireDate)
-    if expireTarget:
-        rows = []
-        # print(expireTarget)
-        for t in expireTarget:
-            r = int(t.row)
-            rows.append(r)
-        # print(rows[0], r)  # 第一row及最後row
-        wks2.delete_rows(rows[0], r)  # 起始,結束
-        return 1
-        # print(getToday())
-        # print("刪除過期成功")
+# def delExpireRow():
+#     expireDate = get_pre_day(getToday())
+#     expireTarget = wks.find(expireDate)
+#     if expireTarget:
+#         rows = []
+#         # print(expireTarget)
+#         for t in expireTarget:
+#             r = int(t.row)
+#             print(r)
+#             wks.delete_rows(r,1)
+            
+#         return 1
+#         # print(getToday())
+#         # print("刪除過期成功")
+#     else:
+#         return 0
+def isExist(id):
+    if(wks2.find(id)):
+        return True
     else:
-        return 0
-
-
-# numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
-# if numAndDate:  # 如果有
-#     detail = getDetailByDate(numAndDate)
-#     user = getUser(numAndDate)
-# print(type(detail))
-# def notice(Userid, detail):
-#     t = f"{Userid}您有課程在明天${detail}"
-#     print(t)
-
-
-# test============================================
-# numAndDate = check_date_in_sheet()
-# if numAndDate:
-#     detail = getDetailByDate(numAndDate)
-#     user = getUser(numAndDate)
-#     print(f"id: {user} \ndetail: {detail}")
-# else:
-#     print("not find")
-
-
-# user = check_date_in_sheet()[0]
-# searchItem = check_date_in_sheet()[1]
+        return False

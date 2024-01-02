@@ -49,18 +49,18 @@ def notice(Userid, detail):
 def check_spreadsheet():
     try:
         numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
-        print(numAndDate)
+    # print(numAndDate)
         if numAndDate:  # 如果有
-            detail = getDetailByDate(numAndDate)
+            # print(numAndDate)
             user = getUser(numAndDate)
-            notice(user, detail)  # 通知
-            print("通知成功")
+            for detail, id in zip(numAndDate, user):
+                notice(id, detail)  # 通知
+                print(f"通知{id}成功")
         else:
             print("not find")
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
         time.sleep(10)
-
 
 @csrf_exempt
 def callback(request):
@@ -77,12 +77,13 @@ def callback(request):
 
         for event in events:
             uid = event.source.user_id  # 取user id
+           
             if isinstance(event, PostbackEvent):  # 如果有postback事件
-                if event.postback.data == "老師":
+                if event.postback.data == "teacher":
                     line_bot_api.reply_message(
                         event.reply_token,
                         TextSendMessage(
-                            text="請輸入課號及日期，多個以逗號區分：(請務必依照格式ex: C02-1 12/27, C02-2 12/30)"
+                            text="輸入暱稱：XX老師/教官"
                         ),
                     )
                 elif event.postback.data == "學生":
@@ -99,35 +100,38 @@ def callback(request):
             elif isinstance(event, MessageEvent):
                 rcMsg = event.message.text
                 if rcMsg == "綁定":
-                    line_bot_api.reply_message(
-                        event.reply_token,
-                        TemplateSendMessage(
-                            alt_text="Buttons template",
-                            template=ButtonsTemplate(
-                                title="身分選擇",
-                                text="請選擇綁定身分",
-                                actions=[
-                                    PostbackTemplateAction(
-                                        label="我是學生", text="我是學生", data="學生"
-                                    ),
-                                    PostbackTemplateAction(
-                                        label="我是老師", text="我是老師", data="老師"
-                                    ),
-                                ],
+                    if (isExist(uid) != True):
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            TemplateSendMessage(
+                                alt_text="Buttons template",
+                                template=ButtonsTemplate(
+                                    title="身分選擇",
+                                    text="請選擇綁定身分",
+                                    actions=[
+                                        PostbackTemplateAction(
+                                            label="我是學生", text="我是student", data="學生"
+                                        ),
+                                        PostbackTemplateAction(
+                                            label="我是老師", text="我是teacher", data="teacher"
+                                        ),
+                                    ],
+                                ),
                             ),
-                        ),
-                    )
-                if ("-") in rcMsg:
-                    if isExit(rcMsg):  # 如果存在
+                        )
+                    else:
                         line_bot_api.reply_message(
                             event.reply_token, TextSendMessage(text="資料已存在")
                         )
-                    else:
-                        setCourse(rcMsg, uid)  # 不存在則寫入
-                        line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="綁定成功")
-                        )
-
+                elif("老師" in rcMsg) or ("教官" in rcMsg) or ("助教" in rcMsg ) or ("教室" in rcMsg):
+                    
+                    setCourse(rcMsg, uid)  # 不存在則寫入
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text="綁定成功"),
+                    )
+                
+                    
                 elif rcMsg == "解除綁定":
                     line_bot_api.reply_message(
                         event.reply_token,
@@ -146,9 +150,8 @@ def callback(request):
                     )
 
                 elif rcMsg == "查詢(查詢需等待)":
-                    c = getDeatilByUser(uid)
-                    if c:  # 如果這個人的資料存在
-                        detail = getDetailByDate(c)
+                    detail = getDeatilByUser(uid)
+                    if detail:  # 如果這個人的資料存在
                         line_bot_api.reply_message(
                             event.reply_token,
                             TextSendMessage(text="本月課程有:\n" + detail),
@@ -162,19 +165,14 @@ def callback(request):
                     line_bot_api.reply_message(
                         event.reply_token, TextSendMessage(text="收到你的貼圖囉！")
                     )
-            else:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextSendMessage(text="無法處理訊息"),
-                )
         return HttpResponse()
     else:   
         return HttpResponseBadRequest()
 
 
 scheduler = BackgroundScheduler()
-# scheduler.add_job(check_spreadsheet, "interval", min=60)  # 每60秒執行
-scheduler.add_job(check_spreadsheet, "cron", hour="17,20")  # 設定每天的下午3點及晚上7點（24小時制）
+scheduler.add_job(check_spreadsheet, "interval", seconds=60)
+# scheduler.add_job(check_spreadsheet, "cron", hour="17,20")  # 設定每天的下午3點及晚上7點（24小時制）
 scheduler.start()
 # ===============
 # 先綁定再做
