@@ -9,15 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-<<<<<<< HEAD
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
-=======
-LINE_CHANNEL_ACCESS_TOKEN = ""
-
-LINE_CHANNEL_SECRET = ""
->>>>>>> 0798c1d3c591ff2be2e0abf753f68d9c6fe276b8
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-cphv7=2s*9w-u84y^+xo51g%v)$0s9@@f3d%qd_=bkfx^0ptt="
 
