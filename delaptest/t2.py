@@ -34,36 +34,59 @@ def setCourse(name, user):
 def getDeatilByUser(id):
     results = wks2.find(id)
     if(results):
-        
         courseList = []
         for i in results:
             r = int(i.row)
-            name = wks2.get_value(f"A{r}")
-            # print(name)
-            target = wks.find(name)
-            for t in target:
-                r = t.row
-                dt = wks.get_value(f"A{r}")
-                courseList.append(dt)
+            c = int(i.col)
+            name = wks2.get_values(start=(r, c - 1), end=(r, c - 1))[0][0]
+        detail = wks.find(name)
+        for n in detail:
+            rn = int(n.row)
+            dt = wks.get_value(f"A{rn}")
+            
+            courseList.append(dt)
         courseList = '\n'.join(courseList)
         return courseList #['Speaking Part 1 & 2 01/03(三)', 'Speaking Part 2 & 3 01/05(三)']
-        
     else:
         return False
-    
+
+
 def getUser(re):
+    name = []
+    idList = []
     for r in re:
-        target = wks.find(r)
-        for t in target:
-            r = int(t.row)
-            c = int(t.col)
-            user = wks.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
-            id = wks2.find(user)
-            for i in id:
-                r = i.row
-                n = wks2.get_value(f"B{r}")
-                return n
+        target_detail = wks.find(r)
+        
+        if(target_detail):
+            for t in target_detail:
+                r = t.row
+                n = wks.get_value(f"B{r}") #name
+                name.append(n)
+    for id in name:
+        target_id = wks2.find(id)
+        for td in target_id:
+            r = td.row
+            id = wks2.get_value(f"B{r}") #name
+            idList.append(id)
+    return idList
+
+
+
+def userName(course):
+    target_detail = wks.find(course)
+    if(target_detail):
+        for t in target_detail:
+            r = t.row
+            n = wks.get_value(f"B{r}") #name
+            return n    
             
+def getUserID(name):
+    target_id = wks2.find(name)
+    if(target_id):
+        for t in target_id:
+            r = t.row
+            n = wks2.get_value(f"B{r}") #name
+            return n
 def delUser(id):
     rows = []
     results = wks2.find(id)
@@ -95,7 +118,6 @@ def getToday():
     today = datetime.today().strftime("%m/%d")
     return today
 
-
 def check_date_in_sheet():
     # 檢查試算表中的日期欄位
     try:
@@ -116,6 +138,25 @@ def check_date_in_sheet():
         return re
     except Exception:
         return 0
+
+def getDetailByDate(reList):  # 從課表抓詳細課程.
+    
+    resultList = ""
+    for r in reList:
+        
+        results = wks.find(r)
+        
+        # print(results)
+        if results:
+            # print(results[0].value)
+            resultList = (results[0].value) + "\n" + resultList
+            resultList = resultList.strip()
+
+        else:
+            return "沒有符合"
+    return resultList
+
+
 # def delExpireRow():
 #     expireDate = get_pre_day(getToday())
 #     expireTarget = wks.find(expireDate)
@@ -137,12 +178,3 @@ def isExist(id):
         return True
     else:
         return False
-
-# def notice(user, d):
-#     print(user, d)
-# def check_spreadsheet():
-#     numAndDate = check_date_in_sheet()
-#     for d in numAndDate:
-    
-#         user = getUser(d)
-#         notice(user, d)

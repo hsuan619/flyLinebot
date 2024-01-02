@@ -25,8 +25,8 @@ from linebot.models import (
     PostbackTemplateAction,
 )
 
-line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
-parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
+line_bot_api = LineBotApi("oPfO16vQOYT+7nHYUmUZ67tQX4FpNmEzbnd6lnLBDscB1PQ22c8Vnei2DCRIf94EhJtyFzRUjGWJ4wdikOiD+uxJ8QlULl/76r/er4XY1sUepPLLsVYmm074L/ZZx2yDtNedL6WFi5Eo8ljhVoq/jgdB04t89/1O/w1cDnyilFU=")
+parser = WebhookParser("88c24b64b2af3ea8b6597232821c24e5")
 
 
 def notice(Userid, detail):
@@ -46,37 +46,18 @@ def notice(Userid, detail):
         )
 
 
-    
 def check_spreadsheet():
     try:
-        numAndDate = check_date_in_sheet()
-        for d in numAndDate:
-            user = getUser(d)
-            notice(user, d)
-# def check_spreadsheet():
-#     try:
-#         numAndDate = check_date_in_sheet()  
-#         for check in numAndDate:
-#             # 檢查今天是否有需要通知的日期
-#             user_id = []
-            
-#             for d in check:
-#                 user_id.append(userName(d))
-#             else:
-#                 print("not find")
-#         return user_id, numAndDate
-               
-    #     numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
-    # # print(numAndDate)
-    #     if numAndDate:  # 如果有
-    #         # print(numAndDate)
-    #         user = getUser(numAndDate)
-    #         for detail, id in zip(numAndDate, user):
-    #             notice(id, detail)  # 通知
-    #             time.sleep(60)
-    #             # print(f"通知{id}成功")
-    #     else:
-    #         print("not find")
+        numAndDate = check_date_in_sheet()  # 檢查今天是否有需要通知的日期
+    # print(numAndDate)
+        if numAndDate:  # 如果有
+            # print(numAndDate)
+            user = getUser(numAndDate)
+            for detail, id in zip(numAndDate, user):
+                notice(id, detail)  # 通知
+                print(f"通知{id}成功")
+        else:
+            print("not find")
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
         time.sleep(10)
@@ -190,8 +171,8 @@ def callback(request):
 
 
 scheduler = BackgroundScheduler()
-# scheduler.add_job(check_spreadsheet, "interval", seconds=10)
-scheduler.add_job(check_spreadsheet, "cron", hour="10, 13, 15, 17, 20")  # 設定每天的下午3點及晚上7點（24小時制）
+scheduler.add_job(check_spreadsheet, "interval", seconds=60)
+# scheduler.add_job(check_spreadsheet, "cron", hour="17,20")  # 設定每天的下午3點及晚上7點（24小時制）
 scheduler.start()
 # ===============
 # 先綁定再做
