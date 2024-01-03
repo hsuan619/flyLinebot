@@ -80,7 +80,7 @@ def callback(request):
                 if event.postback.data == "teacher":
                     line_bot_api.reply_message(
                         event.reply_token,
-                        TextSendMessage(text="輸入暱稱：XX老師/教官"),
+                        TextSendMessage(text="(同課表上名稱) 輸入名稱："),
                     )
                 elif event.postback.data == "學生":
                     line_bot_api.reply_message(
@@ -115,7 +115,7 @@ def callback(request):
                                         ),
                                         PostbackTemplateAction(
                                             label="我是老師",
-                                            text="我是teacher",
+                                            text="我是老師",
                                             data="teacher",
                                         ),
                                     ],
@@ -126,12 +126,8 @@ def callback(request):
                         line_bot_api.reply_message(
                             event.reply_token, TextSendMessage(text="資料已存在")
                         )
-                elif (
-                    ("老師" in rcMsg)
-                    or ("教官" in rcMsg)
-                    or ("助教" in rcMsg)
-                    or ("教室" in rcMsg)
-                ):
+                elif "@" in rcMsg:
+                    rcMsg = rcMsg[1:]
                     setCourse(rcMsg, uid)  # 不存在則寫入
                     line_bot_api.reply_message(
                         event.reply_token,
