@@ -20,21 +20,20 @@ def setCourse(name, user):
     # num_list = num.split(",")
 
     # for n in num_list:
-        row = (
-            len(wks2.get_col(1, returnas="cell", include_empty=False)) + 1
-        )  # Find the next available row
+    row = (
+        len(wks2.get_col(1, returnas="cell", include_empty=False)) + 1
+    )  # Find the next available row
     #     n = n.strip()
-        wks2.update_values(f"A{row}", [[name]])  # Add the data to the next avai
-        wks2.update_values(f"B{row}", [[user]])
-        
-        # n = n.split(" ")
-        # wks2.update_values(f"C{row}", [[n[1]]])
+    wks2.update_values(f"A{row}", [[name]])  # Add the data to the next avai
+    wks2.update_values(f"B{row}", [[user]])
+
+    # n = n.split(" ")
+    # wks2.update_values(f"C{row}", [[n[1]]])
 
 
 def getDeatilByUser(id):
     results = wks2.find(id)
-    if(results):
-        
+    if results:
         courseList = []
         for i in results:
             r = int(i.row)
@@ -45,32 +44,48 @@ def getDeatilByUser(id):
                 r = t.row
                 dt = wks.get_value(f"A{r}")
                 courseList.append(dt)
-        courseList = '\n'.join(courseList)
-        return courseList #['Speaking Part 1 & 2 01/03(三)', 'Speaking Part 2 & 3 01/05(三)']
-        
+        courseList = "\n".join(courseList)
+        return courseList  # ['Speaking Part 1 & 2 01/03(三)', 'Speaking Part 2 & 3 01/05(三)']
+
     else:
         return False
-    
+
+
+# def getUser(re):
+#     for r in re:
+#         target = wks.find(r)
+#         for t in target:
+#             r = int(t.row)
+#             userName = wks.get_value(f"B{r}")
+#             if wks2.find(userName):
+#                 id = wks2.find(userName)
+#                 for i in id:
+#                     r = int(i.row)
+#                     userID = wks2.get_value(f"B{r}")
+#                     return userID
+#             else:
+#                 return "not found in teacher"
 def getUser(re):
-    for r in re:
-        target = wks.find(r)
-        for t in target:
-            r = int(t.row)
-            c = int(t.col)
-            user = wks.get_values(start=(r, c + 1), end=(r, c + 1))[0][0]
-            id = wks2.find(user)
+    target = wks.find(re)
+    for t in target:
+        r = int(t.row)
+        userName = wks.get_value(f"B{r}")
+        if wks2.find(userName):
+            id = wks2.find(userName)
             for i in id:
-                r = i.row
-                n = wks2.get_value(f"B{r}")
-                return n
-            
+                r = int(i.row)
+                userID = wks2.get_value(f"B{r}")
+                return userID
+        else:
+            return "not found in teacher"
+
+
 def delUser(id):
-    rows = []
     results = wks2.find(id)
     if results:
         for i in results:
             r = int(i.row)
-            
+
             wks2.delete_rows(r, 1)  # 起始,結束
         print("刪除成功")
     else:
@@ -112,10 +127,12 @@ def check_date_in_sheet():
 
         else:
             print("今天無")
-        
+
         return re
     except Exception:
         return 0
+
+
 # def delExpireRow():
 #     expireDate = get_pre_day(getToday())
 #     expireTarget = wks.find(expireDate)
@@ -126,23 +143,15 @@ def check_date_in_sheet():
 #             r = int(t.row)
 #             print(r)
 #             wks.delete_rows(r,1)
-            
+
+
 #         return 1
 #         # print(getToday())
 #         # print("刪除過期成功")
 #     else:
 #         return 0
 def isExist(id):
-    if(wks2.find(id)):
+    if wks2.find(id):
         return True
     else:
         return False
-
-# def notice(user, d):
-#     print(user, d)
-# def check_spreadsheet():
-#     numAndDate = check_date_in_sheet()
-#     for d in numAndDate:
-    
-#         user = getUser(d)
-#         notice(user, d)
