@@ -33,21 +33,26 @@ parser = WebhookParser("88c24b64b2af3ea8b6597232821c24e5")
 
 
 def notice(Userid, detail):
-    line_bot_api.push_message(
-        Userid,
-        TemplateSendMessage(
-            alt_text="到課提醒",
-            template=ButtonsTemplate(
-                title="確認出席明日課程",
-                text=f"{detail}",
-                actions=[PostbackAction(label="我會準時到", text="我會準時到", data="準時")],
+    dt = detail + " " + getDateFromCourse(detail)
+    try:
+        line_bot_api.push_message(
+            Userid,
+            TemplateSendMessage(
+                alt_text="到課提醒",
+                template=ButtonsTemplate(
+                    title="確認出席明日課程",
+                    text=f"{dt}",
+                    actions=[PostbackAction(label="我會準時到", text="我會準時到", data="準時")],
+                ),
             ),
-        ),
-    )
+        )
+    except Exception:
+        print("ERROR @ LINE NOTICE")
 
 
 def check_spreadsheet():
     try:
+        delExpireRow()
         numAndDate = check_date_in_sheet()
         if numAndDate:
             for d in numAndDate:
@@ -80,7 +85,7 @@ def callback(request):
                 if event.postback.data == "teacher":
                     line_bot_api.reply_message(
                         event.reply_token,
-                        TextSendMessage(text="(同課表上名稱) 輸入名稱："),
+                        TextSendMessage(text="請輸入您的大名（第一個字請加@）："),
                     )
                 elif event.postback.data == "學生":
                     line_bot_api.reply_message(
@@ -100,7 +105,7 @@ def callback(request):
                     )
             elif isinstance(event, MessageEvent):
                 rcMsg = event.message.text
-                if rcMsg == "綁定":
+                if "綁定中" in rcMsg:
                     if isExist(uid) != True:
                         line_bot_api.reply_message(
                             event.reply_token,
@@ -131,10 +136,10 @@ def callback(request):
                     setCourse(rcMsg, uid)  # 不存在則寫入
                     line_bot_api.reply_message(
                         event.reply_token,
-                        TextSendMessage(text="綁定成功"),
+                        TextSendMessage(text="綁定成功 ➜ 請點選圖文選單「本月課表」查看您的行程"),
                     )
 
-                elif rcMsg == "解除綁定":
+                elif "解除" in rcMsg:
                     line_bot_api.reply_message(
                         event.reply_token,
                         TemplateSendMessage(
@@ -151,17 +156,17 @@ def callback(request):
                         ),
                     )
 
-                elif rcMsg == "查詢(查詢需等待)":
+                elif "查詢" in rcMsg:
                     detail = getDeatilByUser(uid)
                     if detail:  # 如果這個人的資料存在
                         line_bot_api.reply_message(
                             event.reply_token,
-                            TextSendMessage(text="本月課程有:\n" + detail),
+                            TextSendMessage(text="本月您的課程時間是：\n" + detail),
                         )
                     else:
                         line_bot_api.reply_message(
                             event.reply_token,
-                            TextSendMessage(text="無您的資料，請重新綁定通知"),
+                            TextSendMessage(text="查無您的資料，請私訊Laura協助🧚‍♀️"),
                         )
                 elif event.message.type == "sticker":
                     line_bot_api.reply_message(

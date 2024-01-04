@@ -33,6 +33,7 @@ def setCourse(name, user):
 
 def getDeatilByUser(id):
     results = wks2.find(id)
+    dt = ""
     if results:
         courseList = []
         for i in results:
@@ -42,9 +43,9 @@ def getDeatilByUser(id):
             target = wks.find(name)
             for t in target:
                 r = t.row
-                dt = wks.get_value(f"A{r}")
+                dt = wks.get_value(f"A{r}") + " " + wks.get_value(f"B{r}")
                 courseList.append(dt)
-        courseList = "\n".join(courseList)
+            courseList = "\n".join(courseList)
         return courseList  # ['Speaking Part 1 & 2 01/03(三)', 'Speaking Part 2 & 3 01/05(三)']
 
     else:
@@ -69,7 +70,7 @@ def getUser(re):
     target = wks.find(re)
     for t in target:
         r = int(t.row)
-        userName = wks.get_value(f"B{r}")
+        userName = wks.get_value(f"C{r}")
         if wks2.find(userName):
             id = wks2.find(userName)
             for i in id:
@@ -78,6 +79,9 @@ def getUser(re):
                 return userID
         else:
             return "not found in teacher"
+
+
+# print(getUser("id"))
 
 
 def delUser(id):
@@ -123,7 +127,9 @@ def check_date_in_sheet():
         re = []
         if target:
             for t in target:
-                re.append(t.value)
+                r = t.row
+
+                re.append(wks.get_value(f"A{r}"))
 
         else:
             print("今天無")
@@ -133,23 +139,32 @@ def check_date_in_sheet():
         return 0
 
 
-# def delExpireRow():
-#     expireDate = get_pre_day(getToday())
-#     expireTarget = wks.find(expireDate)
-#     if expireTarget:
-#         rows = []
-#         # print(expireTarget)
-#         for t in expireTarget:
-#             r = int(t.row)
-#             print(r)
-#             wks.delete_rows(r,1)
+def delExpireRow():
+    expireDate = getToday()
+    expireTarget = wks.find(expireDate)
+    if expireTarget:
+        rows = []
+        # print(expireTarget)
+        for t in expireTarget:
+            r = int(t.row)
+            # print(r)
+            wks.update_values(f"A{r}", [[""]])
+            wks.update_values(f"B{r}", [[""]])
+            wks.update_values(f"C{r}", [[""]])
+
+        # print(getToday())
+        # print("刪除過期成功")
+    else:
+        return 0
 
 
-#         return 1
-#         # print(getToday())
-#         # print("刪除過期成功")
-#     else:
-#         return 0
+def getDateFromCourse(course):
+    for c in wks.find(course):
+        row = int(c.row)
+        date = wks.get_value(f"B{row}")
+        return date
+
+
 def isExist(id):
     if wks2.find(id):
         return True
