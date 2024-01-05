@@ -179,7 +179,7 @@ def callback(request):
 
 scheduler = BackgroundScheduler()
 # scheduler.add_job(check_spreadsheet, "interval", seconds=10)
-scheduler.add_job(check_spreadsheet, "cron", hour="18")  # 設定前一天的晚上6點（24小時制）
+scheduler.add_job(check_spreadsheet, "cron", hour=21, minute=30)  # 設定前一天的晚上6點（24小時制）
 # scheduler.add_job(check_spreadsheet, "interval", seconds=30)  # 設定每天的下午3點及晚上7點（24小時制）
 
 scheduler.start()
