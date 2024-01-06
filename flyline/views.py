@@ -1,7 +1,7 @@
 from flyline.t2 import *
 from threading import Thread
 import time
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BlockingScheduler, BackgroundScheduler
 from flask import Flask, request, abort
 
 # Create your views here.
@@ -27,7 +27,7 @@ from linebot.models import (
     PostbackTemplateAction,
 )
 
-app = Flask(__name__)
+
 line_bot_api = LineBotApi(
     "oPfO16vQOYT+7nHYUmUZ67tQX4FpNmEzbnd6lnLBDscB1PQ22c8Vnei2DCRIf94EhJtyFzRUjGWJ4wdikOiD+uxJ8QlULl/76r/er4XY1sUepPLLsVYmm074L/ZZx2yDtNedL6WFi5Eo8ljhVoq/jgdB04t89/1O/w1cDnyilFU="
 )
@@ -60,6 +60,7 @@ def check_spreadsheet():
             for d in numAndDate:
                 user = getUser(d)
                 notice(user, d)
+                print(f"通知{user}")
         time.sleep(10)
 
     except (KeyboardInterrupt, SystemExit):
@@ -67,7 +68,7 @@ def check_spreadsheet():
         time.sleep(10)
 
 
-@app.route("/callback", methods=["POST"])
+@csrf_exempt
 def callback(request):
     if request.method == "POST":
         signature = request.META["HTTP_X_LINE_SIGNATURE"]
@@ -179,8 +180,8 @@ def callback(request):
         return HttpResponseBadRequest()
 
 
-scheduler = BackgroundScheduler()
-# scheduler.add_job(check_spreadsheet, "interval", seconds=10)
+scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+
 scheduler.add_job(check_spreadsheet, "cron", hour=18)  # 設定前一天的晚上6點（24小時制）
 # scheduler.add_job(check_spreadsheet, "interval", seconds=30)  # 設定每天的下午3點及晚上7點（24小時制）
 
@@ -188,10 +189,3 @@ scheduler.start()
 # ===============
 # 先綁定再做
 # ================
-import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-# 部屬後設定，每日12, 18執行doChecking更新
