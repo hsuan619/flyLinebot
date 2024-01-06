@@ -1,4 +1,4 @@
-from flyline.t2 import *
+from t2 import *
 from threading import Thread
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
