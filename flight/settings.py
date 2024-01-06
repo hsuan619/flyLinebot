@@ -11,10 +11,10 @@ APP_NAME = os.environ.get("FLY_APP_NAME")
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 
-LINE_CHANNEL_SECRET =  os.environ.get("LINE_CHANNEL_SECRET")
+LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-cphv7=2s*9w-u84y^+xo51g%v)$0s9@@f3d%qd_=bkfx^0ptt="
-
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
