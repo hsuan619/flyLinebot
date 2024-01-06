@@ -1,1 +1,1 @@
-web: gunicorn flight.wsgi
+web: python app.py
